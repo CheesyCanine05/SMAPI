@@ -41,11 +41,11 @@ namespace StardewModdingAPI.Framework
         /// <summary>The underlying asset cache.</summary>
         private readonly ContentCache Cache;
 
-        /// <summary>The private <see cref="LocalizedContentManager"/> method which generates the locale portion of an asset name.</summary>
-        private readonly IReflectedMethod GetKeyLocale;
+        /// <summary>The locale codes used in asset keys indexed by enum value.</summary>
+        private readonly IDictionary<LanguageCode, string> Locales;
 
-        /// <summary>The language codes used in asset keys.</summary>
-        private readonly IDictionary<string, LanguageCode> KeyLocales;
+        /// <summary>The language enum values indexed by locale code.</summary>
+        private readonly IDictionary<string, LanguageCode> LanguageCodes;
 
         /// <summary>Provides metadata for core game assets.</summary>
         private readonly CoreAssets CoreAssets;
@@ -95,12 +95,12 @@ namespace StardewModdingAPI.Framework
             // init
             this.Monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
             this.Cache = new ContentCache(this, reflection);
-            this.GetKeyLocale = reflection.GetMethod(this, "languageCode");
             this.ModContentPrefix = this.GetAssetNameFromFilePath(Constants.ModPath);
 
             // get asset data
-            this.CoreAssets = new CoreAssets(this.NormaliseAssetName);
-            this.KeyLocales = this.GetKeyLocales(reflection);
+            this.CoreAssets = new CoreAssets(this.NormaliseAssetName, reflection);
+            this.Locales = this.GetKeyLocales(reflection);
+            this.LanguageCodes = this.Locales.ToDictionary(p => p.Value, p => p.Key, StringComparer.InvariantCultureIgnoreCase);
         }
 
         /****
@@ -153,7 +153,7 @@ namespace StardewModdingAPI.Framework
         /// <summary>Get the current content locale.</summary>
         public string GetLocale()
         {
-            return this.GetKeyLocale.Invoke<string>();
+            return this.Locales[this.GetCurrentLanguage()];
         }
 
         /// <summary>Get whether the content manager has already loaded and cached the given asset.</summary>
@@ -398,29 +398,26 @@ namespace StardewModdingAPI.Framework
 
         /// <summary>Get the locale codes (like <c>ja-JP</c>) used in asset keys.</summary>
         /// <param name="reflection">Simplifies access to private game code.</param>
-        private IDictionary<string, LanguageCode> GetKeyLocales(Reflector reflection)
+        private IDictionary<LanguageCode, string> GetKeyLocales(Reflector reflection)
         {
-            // get the private code field directly to avoid changed-code logic
-            IReflectedField<LanguageCode> codeField = reflection.GetField<LanguageCode>(typeof(LocalizedContentManager), "_currentLangCode");
-
-            // remember previous settings
-            LanguageCode previousCode = codeField.GetValue();
             string previousOverride = this.LanguageCodeOverride;
-
-            // create locale => code map
-            IDictionary<string, LanguageCode> map = new Dictionary<string, LanguageCode>(StringComparer.InvariantCultureIgnoreCase);
-            this.LanguageCodeOverride = null;
-            foreach (LanguageCode code in Enum.GetValues(typeof(LanguageCode)))
+            try
             {
-                codeField.SetValue(code);
-                map[this.GetKeyLocale.Invoke<string>()] = code;
+                // temporarily disable language override
+                this.LanguageCodeOverride = null;
+
+                // create locale => code map
+                IReflectedMethod languageCodeString = reflection.GetMethod(this, "languageCodeString");
+                IDictionary<LanguageCode, string> map = new Dictionary<LanguageCode, string>();
+                foreach (LanguageCode code in Enum.GetValues(typeof(LanguageCode)))
+                    map[code] = languageCodeString.Invoke<string>(code);
+                return map;
             }
-
-            // restore previous settings
-            codeField.SetValue(previousCode);
-            this.LanguageCodeOverride = previousOverride;
-
-            return map;
+            finally
+            {
+                // restore previous settings
+                this.LanguageCodeOverride = previousOverride;
+            }
         }
 
         /// <summary>Get the asset name from a cache key.</summary>
@@ -444,7 +441,7 @@ namespace StardewModdingAPI.Framework
                 if (lastSepIndex >= 0)
                 {
                     string suffix = cacheKey.Substring(lastSepIndex + 1, cacheKey.Length - lastSepIndex - 1);
-                    if (this.KeyLocales.ContainsKey(suffix))
+                    if (this.LanguageCodes.ContainsKey(suffix))
                     {
                         assetName = cacheKey.Substring(0, lastSepIndex);
                         localeCode = cacheKey.Substring(lastSepIndex + 1, cacheKey.Length - lastSepIndex - 1);
@@ -466,7 +463,7 @@ namespace StardewModdingAPI.Framework
         private bool IsNormalisedKeyLoaded(string normalisedAssetName)
         {
             return this.Cache.ContainsKey(normalisedAssetName)
-                || this.Cache.ContainsKey($"{normalisedAssetName}.{this.GetKeyLocale.Invoke<string>()}"); // translated asset
+                || this.Cache.ContainsKey($"{normalisedAssetName}.{this.Locales[this.GetCurrentLanguage()]}"); // translated asset
         }
 
         /// <summary>Track that a content manager loaded an asset.</summary>

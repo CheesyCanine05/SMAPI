@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI.Framework;
+using StardewModdingAPI.Framework.Reflection;
 using StardewValley;
 using StardewValley.BellsAndWhistles;
 using StardewValley.Buildings;
@@ -31,7 +32,8 @@ namespace StardewModdingAPI.Metadata
         *********/
         /// <summary>Initialise the core asset data.</summary>
         /// <param name="getNormalisedPath">Normalises an asset key to match the cache key.</param>
-        public CoreAssets(Func<string, string> getNormalisedPath)
+        /// <param name="reflection">Simplifies access to private code.</param>
+        public CoreAssets(Func<string, string> getNormalisedPath, Reflector reflection)
         {
             this.GetNormalisedPath = getNormalisedPath;
             this.SingletonSetters =
@@ -83,29 +85,21 @@ namespace StardewModdingAPI.Metadata
                     ["TileSheets\\tools"] = (content, key) => Game1.ResetToolSpriteSheet(),
 
                     // from Bush
-                    ["TileSheets\\bushes"] = (content, key) => Bush.texture = content.Load<Texture2D>(key),
-
-                    // from Critter
-                    ["TileSheets\\critters"] = (content, key) => Critter.critterTexture = content.Load<Texture2D>(key),
+                    ["TileSheets\\bushes"] = (content, key) => reflection.GetField<Lazy<Texture2D>>(typeof(Bush), "texture").SetValue(new Lazy<Texture2D>(() => content.Load<Texture2D>(key))),
 
                     // from Farm
-                    ["Buildings\\houses"] = (content, key) =>
-                    {
-                        Farm farm = Game1.getFarm();
-                        if (farm != null)
-                            farm.houseTextures = content.Load<Texture2D>(key);
-                    },
+                    ["Buildings\\houses"] = (content, key) => reflection.GetField<Texture2D>(typeof(Farm), nameof(Farm.houseTextures)).SetValue(content.Load<Texture2D>(key)),
 
                     // from Farmer
                     ["Characters\\Farmer\\farmer_base"] = (content, key) =>
                     {
                         if (Game1.player != null && Game1.player.isMale)
-                            Game1.player.FarmerRenderer = new FarmerRenderer(content.Load<Texture2D>(key));
+                            Game1.player.FarmerRenderer = new FarmerRenderer(key);
                     },
                     ["Characters\\Farmer\\farmer_girl_base"] = (content, key) =>
                     {
                         if (Game1.player != null && !Game1.player.isMale)
-                            Game1.player.FarmerRenderer = new FarmerRenderer(content.Load<Texture2D>(key));
+                            Game1.player.FarmerRenderer = new FarmerRenderer(key);
                     },
 
                     // from Flooring
@@ -144,9 +138,8 @@ namespace StardewModdingAPI.Metadata
                 Building[] buildings = this.GetAllBuildings().Where(p => key == this.GetNormalisedPath($"Buildings\\{p.buildingType}")).ToArray();
                 if (buildings.Any())
                 {
-                    Texture2D texture = content.Load<Texture2D>(key);
                     foreach (Building building in buildings)
-                        building.texture = texture;
+                        building.texture = new Lazy<Texture2D>(() => content.Load<Texture2D>(key));
                     return true;
                 }
                 return false;
@@ -162,9 +155,11 @@ namespace StardewModdingAPI.Metadata
         /// <summary>Get all player-constructed buildings in the world.</summary>
         private IEnumerable<Building> GetAllBuildings()
         {
-            return Game1.locations
-                .OfType<BuildableGameLocation>()
-                .SelectMany(p => p.buildings);
+            foreach (BuildableGameLocation location in Game1.locations.OfType<BuildableGameLocation>())
+            {
+                foreach (Building building in location.buildings)
+                    yield return building;
+            }
         }
     }
 }

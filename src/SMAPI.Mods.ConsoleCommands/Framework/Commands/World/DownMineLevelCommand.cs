@@ -1,4 +1,4 @@
-﻿using StardewValley;
+using StardewValley;
 using StardewValley.Locations;
 
 namespace StardewModdingAPI.Mods.ConsoleCommands.Framework.Commands.World
@@ -21,7 +21,7 @@ namespace StardewModdingAPI.Mods.ConsoleCommands.Framework.Commands.World
         {
             int level = (Game1.currentLocation as MineShaft)?.mineLevel ?? 0;
             monitor.Log($"OK, warping you to mine level {level + 1}.", LogLevel.Info);
-            Game1.enterMine(false, level + 1, "");
+            Game1.enterMine(level + 1);
         }
     }
 }

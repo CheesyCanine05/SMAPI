@@ -1,4 +1,4 @@
-﻿using StardewValley;
+using StardewValley;
 
 namespace StardewModdingAPI.Mods.ConsoleCommands.Framework.Commands.Player
 {
@@ -39,7 +39,7 @@ namespace StardewModdingAPI.Mods.ConsoleCommands.Framework.Commands.Player
                 case "farm":
                     if (!string.IsNullOrWhiteSpace(name))
                     {
-                        Game1.player.farmName = args[1];
+                        Game1.player.farmName.Value = args[1];
                         monitor.Log($"OK, your farm's name is now {Game1.player.farmName}.", LogLevel.Info);
                     }
                     else

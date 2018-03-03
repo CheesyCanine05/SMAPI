@@ -247,6 +247,7 @@ namespace StardewModdingAPI
             try
             {
                 this.IsGameRunning = true;
+                StardewValley.Program.releaseBuild = true; // game's debug logic interferes with SMAPI opening the game window
                 this.GameInstance.Run();
             }
             catch (Exception ex)

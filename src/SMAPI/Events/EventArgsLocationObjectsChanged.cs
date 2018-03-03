@@ -1,6 +1,7 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using StardewValley;
+using Netcode;
 using Object = StardewValley.Object;
 
 namespace StardewModdingAPI.Events
@@ -12,7 +13,7 @@ namespace StardewModdingAPI.Events
         ** Accessors
         *********/
         /// <summary>The current list of objects in the current location.</summary>
-        public SerializableDictionary<Vector2, Object> NewObjects { get; }
+        public IDictionary<Vector2, NetRef<Object>> NewObjects { get; }
 
 
         /*********
@@ -20,7 +21,7 @@ namespace StardewModdingAPI.Events
         *********/
         /// <summary>Construct an instance.</summary>
         /// <param name="newObjects">The current list of objects in the current location.</param>
-        public EventArgsLocationObjectsChanged(SerializableDictionary<Vector2, Object> newObjects)
+        public EventArgsLocationObjectsChanged(IDictionary<Vector2, NetRef<Object>> newObjects)
         {
             this.NewObjects = newObjects;
         }

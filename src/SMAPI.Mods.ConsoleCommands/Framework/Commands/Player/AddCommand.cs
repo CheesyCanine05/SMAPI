@@ -54,7 +54,7 @@ namespace StardewModdingAPI.Mods.ConsoleCommands.Framework.Commands.Player
 
             // apply quality
             if (match.Item is Object obj)
-                obj.quality = quality;
+                obj.Quality = quality;
             else if (match.Item is Tool tool)
                 tool.UpgradeLevel = quality;
 

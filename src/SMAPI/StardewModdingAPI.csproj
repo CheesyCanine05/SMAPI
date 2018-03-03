@@ -230,7 +230,6 @@
     <Compile Include="IModHelper.cs" />
     <Compile Include="IModLinked.cs" />
     <Compile Include="Framework\Logging\LogFileManager.cs" />
-    <Compile Include="IPrivateProperty.cs" />
     <Compile Include="ISemanticVersion.cs" />
     <Compile Include="ITranslationHelper.cs" />
     <Compile Include="LogLevel.cs" />
@@ -247,8 +246,6 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Framework\SGame.cs" />
-    <Compile Include="IPrivateField.cs" />
-    <Compile Include="IPrivateMethod.cs" />
     <Compile Include="IReflectionHelper.cs" />
     <Compile Include="SemanticVersion.cs" />
     <Compile Include="Translation.cs" />

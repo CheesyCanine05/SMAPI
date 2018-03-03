@@ -5,7 +5,7 @@ namespace StardewModdingAPI.Framework.Reflection
 {
     /// <summary>A property obtained through reflection.</summary>
     /// <typeparam name="TValue">The property value type.</typeparam>
-    internal class ReflectedProperty<TValue> : IPrivateProperty<TValue>, IReflectedProperty<TValue>
+    internal class ReflectedProperty<TValue> : IReflectedProperty<TValue>
     {
         /*********
         ** Properties

@@ -12,6 +12,9 @@
   * Fixed update checks failing for some older mods with non-standard versions.
   * Updated compatibility list and added update checks for more mods.
 
+* For modders:
+  * Dropped support for most deprecated APIs.
+
 * For the [log parser][]:
   * Fixed incorrect filtering in some cases.
   * Fixed error if mods have duplicate names.

@@ -18,10 +18,6 @@ namespace StardewModdingAPI.Events
         /// <summary>The current cursor position.</summary>
         public ICursorPosition Cursor { get; }
 
-        /// <summary>Whether the input is considered a 'click' by the game for enabling action.</summary>
-        [Obsolete("Use " + nameof(EventArgsInput.IsActionButton) + " or " + nameof(EventArgsInput.IsUseToolButton) + " instead")] // deprecated in SMAPI 2.1
-        public bool IsClick => this.IsActionButton;
-
         /// <summary>Whether the input should trigger actions on the affected tile.</summary>
         public bool IsActionButton { get; }
 

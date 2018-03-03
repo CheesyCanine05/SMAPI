@@ -112,6 +112,7 @@
     <Compile Include="Framework\ModLoading\PlatformAssemblyMap.cs" />
     <Compile Include="Framework\ModLoading\RewriteHelper.cs" />
     <Compile Include="Framework\ModLoading\Rewriters\FieldReplaceRewriter.cs" />
+    <Compile Include="Framework\ModLoading\Rewriters\StaticFieldToConstantRewriter.cs" />
     <Compile Include="Framework\ModLoading\Rewriters\FieldToPropertyRewriter.cs" />
     <Compile Include="Framework\ModLoading\Finders\ReferenceToMemberWithUnexpectedTypeFinder.cs" />
     <Compile Include="Framework\ModLoading\Rewriters\VirtualEntryCallRemover.cs" />

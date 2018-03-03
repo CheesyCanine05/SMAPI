@@ -5,20 +5,15 @@ using StardewModdingAPI.Framework.ModLoading.Finders;
 
 namespace StardewModdingAPI.Framework.ModLoading.Rewriters
 {
-    /// <summary>Rewrites field references into property references.</summary>
-    internal class FieldToPropertyRewriter : FieldFinder
+    /// <summary>Rewrites static field references into constant values.</summary>
+    /// <typeparam name="TValue">The constant value type.</typeparam>
+    internal class StaticFieldToConstantRewriter<TValue> : FieldFinder
     {
         /*********
         ** Properties
         *********/
-        /// <summary>The type whose field to which references should be rewritten.</summary>
-        private readonly Type Type;
-
-        /// <summary>The field name to rewrite.</summary>
-        private readonly string FieldName;
-
-        /// <summary>The property name.</summary>
-        private readonly string PropertyName;
+        /// <summary>The constant value to replace with.</summary>
+        private readonly TValue Value;
 
 
         /*********
@@ -27,20 +22,12 @@ namespace StardewModdingAPI.Framework.ModLoading.Rewriters
         /// <summary>Construct an instance.</summary>
         /// <param name="type">The type whose field to which references should be rewritten.</param>
         /// <param name="fieldName">The field name to rewrite.</param>
-        /// <param name="propertyName">The property name (if different).</param>
-        public FieldToPropertyRewriter(Type type, string fieldName, string propertyName)
+        /// <param name="value">The constant value to replace with.</param>
+        public StaticFieldToConstantRewriter(Type type, string fieldName, TValue value)
             : base(type.FullName, fieldName, InstructionHandleResult.None)
         {
-            this.Type = type;
-            this.FieldName = fieldName;
-            this.PropertyName = propertyName;
+            this.Value = value;
         }
-
-        /// <summary>Construct an instance.</summary>
-        /// <param name="type">The type whose field to which references should be rewritten.</param>
-        /// <param name="fieldName">The field name to rewrite.</param>
-        public FieldToPropertyRewriter(Type type, string fieldName)
-            : this(type, fieldName, fieldName) { }
 
         /// <summary>Perform the predefined logic for an instruction if applicable.</summary>
         /// <param name="module">The assembly module containing the instruction.</param>
@@ -53,11 +40,24 @@ namespace StardewModdingAPI.Framework.ModLoading.Rewriters
             if (!this.IsMatch(instruction))
                 return InstructionHandleResult.None;
 
-            string methodPrefix = instruction.OpCode == OpCodes.Ldsfld || instruction.OpCode == OpCodes.Ldfld ? "get" : "set";
-            MethodReference propertyRef = module.Import(this.Type.GetMethod($"{methodPrefix}_{this.PropertyName}"));
-            cil.Replace(instruction, cil.Create(OpCodes.Call, propertyRef));
-
+            cil.Replace(instruction, this.CreateConstantInstruction(cil, this.Value));
             return InstructionHandleResult.Rewritten;
+        }
+
+
+        /*********
+        ** Private methods
+        *********/
+        /// <summary>Create a CIL constant value instruction.</summary>
+        /// <param name="cil">The CIL processor.</param>
+        /// <param name="value">The constant value to set.</param>
+        private Instruction CreateConstantInstruction(ILProcessor cil, object value)
+        {
+            if (typeof(TValue) == typeof(int))
+                return cil.Create(OpCodes.Ldc_I4, (int)value);
+            if (typeof(TValue) == typeof(string))
+                return cil.Create(OpCodes.Ldstr, (string)value);
+            throw new NotSupportedException($"Rewriting to constant values of type {typeof(TValue)} isn't currently supported.");
         }
     }
 }

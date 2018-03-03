@@ -6,6 +6,7 @@ using StardewModdingAPI.Framework.ModLoading;
 using StardewModdingAPI.Framework.ModLoading.Finders;
 using StardewModdingAPI.Framework.ModLoading.Rewriters;
 using StardewValley;
+using SObject = StardewValley.Object;
 
 namespace StardewModdingAPI.Metadata
 {
@@ -28,79 +29,27 @@ namespace StardewModdingAPI.Metadata
         {
             return new IInstructionHandler[]
             {
-                /****
-                ** rewrite CIL to fix incompatible code
-                ****/
-                // crossplatform
+                // rewrite for crossplatform compatibility
                 new MethodParentRewriter(typeof(SpriteBatch), typeof(SpriteBatchMethods), onlyIfPlatformChanged: true),
 
-                // Stardew Valley 1.2
-                new FieldToPropertyRewriter(typeof(Game1), nameof(Game1.activeClickableMenu)),
-                new FieldToPropertyRewriter(typeof(Game1), nameof(Game1.currentMinigame)),
-                new FieldToPropertyRewriter(typeof(Game1), nameof(Game1.gameMode)),
-                new FieldToPropertyRewriter(typeof(Game1), nameof(Game1.player)),
-                new FieldReplaceRewriter(typeof(Game1), "borderFont", nameof(Game1.smallFont)),
-                new FieldReplaceRewriter(typeof(Game1), "smoothFont", nameof(Game1.smallFont)),
+                // rewrite entry method for SMAPI 2.0
+                new VirtualEntryCallRemover(),
 
-                // SMAPI 1.9
-                new TypeReferenceRewriter("StardewModdingAPI.Inheritance.ItemStackChange", typeof(ItemStackChange)),
+                // fix common issues from SDV 1.3
+                new StaticFieldToConstantRewriter<int>(typeof(Game1), "tileSize", Game1.tileSize),
+                new FieldToPropertyRewriter(typeof(Character), nameof(Character.name), nameof(Character.Name)),
+                new FieldToPropertyRewriter(typeof(GameLocation), nameof(GameLocation.isFarm), nameof(GameLocation.IsFarm)),
+                new FieldToPropertyRewriter(typeof(GameLocation), nameof(GameLocation.isOutdoors), nameof(GameLocation.isOutdoors)),
+                new FieldToPropertyRewriter(typeof(GameLocation), nameof(GameLocation.name), nameof(GameLocation.Name)),
+                new FieldToPropertyRewriter(typeof(Item), nameof(Item.category), nameof(Item.Category)),
+                new FieldToPropertyRewriter(typeof(SObject), nameof(SObject.quality), nameof(SObject.Quality)),
+                new FieldToPropertyRewriter(typeof(SObject), nameof(SObject.stack), nameof(SObject.Stack)),
 
-                // SMAPI 2.0
-                new VirtualEntryCallRemover(), // Mod.Entry changed from virtual to abstract in SMAPI 2.0, which breaks the few mods which called base.Entry()
-
-                /****
-                ** detect incompatible code
-                ****/
-                // changes in Stardew Valley 1.2 (with no rewriters)
-                new FieldFinder("StardewValley.Item", "set_Name", InstructionHandleResult.NotCompatible),
-
-                // APIs removed in SMAPI 1.9
-                new TypeFinder("StardewModdingAPI.Advanced.ConfigFile", InstructionHandleResult.NotCompatible),
-                new TypeFinder("StardewModdingAPI.Advanced.IConfigFile", InstructionHandleResult.NotCompatible),
-                new TypeFinder("StardewModdingAPI.Entities.SPlayer", InstructionHandleResult.NotCompatible),
-                new TypeFinder("StardewModdingAPI.Extensions", InstructionHandleResult.NotCompatible),
-                new TypeFinder("StardewModdingAPI.Inheritance.SGame", InstructionHandleResult.NotCompatible),
-                new TypeFinder("StardewModdingAPI.Inheritance.SObject", InstructionHandleResult.NotCompatible),
-                new TypeFinder("StardewModdingAPI.LogWriter", InstructionHandleResult.NotCompatible),
-                new TypeFinder("StardewModdingAPI.Manifest", InstructionHandleResult.NotCompatible),
-                new TypeFinder("StardewModdingAPI.Version", InstructionHandleResult.NotCompatible),
-                new EventFinder("StardewModdingAPI.Events.GraphicsEvents", "DrawDebug", InstructionHandleResult.NotCompatible),
-                new EventFinder("StardewModdingAPI.Events.GraphicsEvents", "DrawTick", InstructionHandleResult.NotCompatible),
-                new EventFinder("StardewModdingAPI.Events.GraphicsEvents", "OnPostRenderHudEventNoCheck", InstructionHandleResult.NotCompatible),
-                new EventFinder("StardewModdingAPI.Events.GraphicsEvents", "OnPostRenderGuiEventNoCheck", InstructionHandleResult.NotCompatible),
-                new EventFinder("StardewModdingAPI.Events.GraphicsEvents", "OnPreRenderHudEventNoCheck", InstructionHandleResult.NotCompatible),
-                new EventFinder("StardewModdingAPI.Events.GraphicsEvents", "OnPreRenderGuiEventNoCheck", InstructionHandleResult.NotCompatible),
-
-                // APIs removed in SMAPI 2.0
-                new TypeFinder("StardewModdingAPI.Command", InstructionHandleResult.NotCompatible),
-                new TypeFinder("StardewModdingAPI.Config", InstructionHandleResult.NotCompatible),
-                new TypeFinder("StardewModdingAPI.Log", InstructionHandleResult.NotCompatible),
-                new EventFinder("StardewModdingAPI.Events.GameEvents", "Initialize", InstructionHandleResult.NotCompatible),
-                new EventFinder("StardewModdingAPI.Events.GameEvents", "LoadContent", InstructionHandleResult.NotCompatible),
-                new EventFinder("StardewModdingAPI.Events.GameEvents", "GameLoaded", InstructionHandleResult.NotCompatible),
-                new EventFinder("StardewModdingAPI.Events.PlayerEvents", "LoadedGame", InstructionHandleResult.NotCompatible),
-                new EventFinder("StardewModdingAPI.Events.PlayerEvents", "FarmerChanged", InstructionHandleResult.NotCompatible),
-                new EventFinder("StardewModdingAPI.Events.TimeEvents", "DayOfMonthChanged", InstructionHandleResult.NotCompatible),
-                new EventFinder("StardewModdingAPI.Events.TimeEvents", "YearOfGameChanged", InstructionHandleResult.NotCompatible),
-                new EventFinder("StardewModdingAPI.Events.TimeEvents", "SeasonOfYearChanged", InstructionHandleResult.NotCompatible),
-                new EventFinder("StardewModdingAPI.Events.TimeEvents", "OnNewDay", InstructionHandleResult.NotCompatible),
-                new TypeFinder("StardewModdingAPI.Events.EventArgsCommand", InstructionHandleResult.NotCompatible),
-                new TypeFinder("StardewModdingAPI.Events.EventArgsFarmerChanged", InstructionHandleResult.NotCompatible),
-                new TypeFinder("StardewModdingAPI.Events.EventArgsLoadedGameChanged", InstructionHandleResult.NotCompatible),
-                new TypeFinder("StardewModdingAPI.Events.EventArgsNewDay", InstructionHandleResult.NotCompatible),
-                new TypeFinder("StardewModdingAPI.Events.EventArgsStringChanged", InstructionHandleResult.NotCompatible),
-                new PropertyFinder("StardewModdingAPI.Mod", "PathOnDisk", InstructionHandleResult.NotCompatible),
-                new PropertyFinder("StardewModdingAPI.Mod", "BaseConfigPath", InstructionHandleResult.NotCompatible),
-                new PropertyFinder("StardewModdingAPI.Mod", "PerSaveConfigFolder", InstructionHandleResult.NotCompatible),
-                new PropertyFinder("StardewModdingAPI.Mod", "PerSaveConfigPath", InstructionHandleResult.NotCompatible),
-
-                // broken code
+                // detect broken field/property/method references
                 new ReferenceToMissingMemberFinder(this.ValidateReferencesToAssemblies),
                 new ReferenceToMemberWithUnexpectedTypeFinder(this.ValidateReferencesToAssemblies),
 
-                /****
-                ** detect code which may impact game stability
-                ****/
+                // detect code which may impact game stability
                 new TypeFinder("Harmony.HarmonyInstance", InstructionHandleResult.DetectedGamePatch),
                 new TypeFinder("System.Runtime.CompilerServices.CallSite", InstructionHandleResult.DetectedDynamic),
                 new FieldFinder(typeof(SaveGame).FullName, nameof(SaveGame.serializer), InstructionHandleResult.DetectedSaveSerialiser),

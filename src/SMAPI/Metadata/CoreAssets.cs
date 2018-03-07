@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework.Graphics;
-using StardewModdingAPI.Framework;
 using StardewModdingAPI.Framework.Reflection;
 using StardewValley;
 using StardewValley.BellsAndWhistles;
@@ -24,7 +23,7 @@ namespace StardewModdingAPI.Metadata
         protected readonly Func<string, string> GetNormalisedPath;
 
         /// <summary>Setters which update static or singleton texture fields indexed by normalised asset key.</summary>
-        private readonly IDictionary<string, Action<SContentManager, string>> SingletonSetters;
+        private readonly IDictionary<string, Action<LocalizedContentManager, string>> SingletonSetters;
 
 
         /*********
@@ -37,7 +36,7 @@ namespace StardewModdingAPI.Metadata
         {
             this.GetNormalisedPath = getNormalisedPath;
             this.SingletonSetters =
-                new Dictionary<string, Action<SContentManager, string>>
+                new Dictionary<string, Action<LocalizedContentManager, string>>
                 {
                     // from CraftingRecipe.InitShared
                     ["Data\\CraftingRecipes"] = (content, key) => CraftingRecipe.craftingRecipes = content.Load<Dictionary<string, string>>(key),
@@ -123,10 +122,10 @@ namespace StardewModdingAPI.Metadata
         /// <param name="content">The content manager through which to reload the asset.</param>
         /// <param name="key">The asset key to reload.</param>
         /// <returns>Returns whether an asset was reloaded.</returns>
-        public bool ReloadForKey(SContentManager content, string key)
+        public bool ReloadForKey(LocalizedContentManager content, string key)
         {
             // static assets
-            if (this.SingletonSetters.TryGetValue(key, out Action<SContentManager, string> reload))
+            if (this.SingletonSetters.TryGetValue(key, out Action<LocalizedContentManager, string> reload))
             {
                 reload(content, key);
                 return true;

@@ -58,7 +58,7 @@ namespace StardewModdingAPI
         private SGame GameInstance;
 
         /// <summary>The underlying content manager.</summary>
-        private SContentManager ContentManager => this.GameInstance.SContentManager;
+        private ContentCore ContentCore => this.GameInstance.ContentCore;
 
         /// <summary>The SMAPI configuration settings.</summary>
         /// <remarks>This is initialised after the game starts.</remarks>
@@ -288,6 +288,7 @@ namespace StardewModdingAPI
             this.IsGameRunning = false;
             this.LogFile?.Dispose();
             this.ConsoleManager?.Dispose();
+            this.ContentCore?.Dispose();
             this.CancellationTokenSource?.Dispose();
             this.GameInstance?.Dispose();
         }
@@ -389,7 +390,7 @@ namespace StardewModdingAPI
                 mods = resolver.ProcessDependencies(mods, modDatabase).ToArray();
 
                 // load mods
-                this.LoadMods(mods, this.JsonHelper, this.ContentManager, modDatabase);
+                this.LoadMods(mods, this.JsonHelper, this.ContentCore, modDatabase);
 
                 // check for updates
                 this.CheckForUpdatesAsync(mods);
@@ -413,8 +414,8 @@ namespace StardewModdingAPI
         private void OnLocaleChanged()
         {
             // get locale
-            string locale = this.ContentManager.GetLocale();
-            LocalizedContentManager.LanguageCode languageCode = this.ContentManager.GetCurrentLanguage();
+            string locale = this.ContentCore.GetLocale();
+            LocalizedContentManager.LanguageCode languageCode = this.ContentCore.Language;
 
             // update mod translation helpers
             foreach (IModMetadata mod in this.ModRegistry.GetAll(contentPacks: false))
@@ -671,9 +672,9 @@ namespace StardewModdingAPI
         /// <summary>Load and hook up the given mods.</summary>
         /// <param name="mods">The mods to load.</param>
         /// <param name="jsonHelper">The JSON helper with which to read mods' JSON files.</param>
-        /// <param name="contentManager">The content manager to use for mod content.</param>
+        /// <param name="contentCore">The content manager to use for mod content.</param>
         /// <param name="modDatabase">Handles access to SMAPI's internal mod metadata list.</param>
-        private void LoadMods(IModMetadata[] mods, JsonHelper jsonHelper, SContentManager contentManager, ModDatabase modDatabase)
+        private void LoadMods(IModMetadata[] mods, JsonHelper jsonHelper, ContentCore contentCore, ModDatabase modDatabase)
         {
             this.Monitor.Log("Loading mods...", LogLevel.Trace);
 
@@ -697,7 +698,8 @@ namespace StardewModdingAPI
 
                 // load mod as content pack
                 IMonitor monitor = this.GetSecondaryMonitor(metadata.DisplayName);
-                IContentHelper contentHelper = new ContentHelper(contentManager, metadata.DirectoryPath, manifest.UniqueID, metadata.DisplayName, monitor);
+                ContentManagerShim contentManager = this.ContentCore.CreateContentManager($"Mods.{metadata.Manifest.UniqueID}", metadata.DirectoryPath);
+                IContentHelper contentHelper = new ContentHelper(this.ContentCore, contentManager, metadata.DirectoryPath, manifest.UniqueID, metadata.DisplayName, monitor);
                 IContentPack contentPack = new ContentPack(metadata.DirectoryPath, manifest, contentHelper, jsonHelper);
                 metadata.SetMod(contentPack, monitor);
                 this.ModRegistry.Add(metadata);
@@ -777,15 +779,17 @@ namespace StardewModdingAPI
                         IModHelper modHelper;
                         {
                             ICommandHelper commandHelper = new CommandHelper(manifest.UniqueID, metadata.DisplayName, this.CommandManager);
-                            IContentHelper contentHelper = new ContentHelper(contentManager, metadata.DirectoryPath, manifest.UniqueID, metadata.DisplayName, monitor);
+                            ContentManagerShim contentManager = this.ContentCore.CreateContentManager($"Mods.{metadata.Manifest.UniqueID}", metadata.DirectoryPath);
+                            IContentHelper contentHelper = new ContentHelper(contentCore, contentManager, metadata.DirectoryPath, manifest.UniqueID, metadata.DisplayName, monitor);
                             IReflectionHelper reflectionHelper = new ReflectionHelper(manifest.UniqueID, metadata.DisplayName, this.Reflection, this.DeprecationManager);
                             IModRegistry modRegistryHelper = new ModRegistryHelper(manifest.UniqueID, this.ModRegistry, proxyFactory, monitor);
-                            ITranslationHelper translationHelper = new TranslationHelper(manifest.UniqueID, manifest.Name, contentManager.GetLocale(), contentManager.GetCurrentLanguage());
+                            ITranslationHelper translationHelper = new TranslationHelper(manifest.UniqueID, manifest.Name, contentCore.GetLocale(), contentCore.Language);
 
                             IContentPack CreateTransitionalContentPack(string packDirPath, IManifest packManifest)
                             {
                                 IMonitor packMonitor = this.GetSecondaryMonitor(packManifest.Name);
-                                IContentHelper packContentHelper = new ContentHelper(contentManager, packDirPath, packManifest.UniqueID, packManifest.Name, packMonitor);
+                                ContentManagerShim packContentManager = this.ContentCore.CreateContentManager($"Mods.{packManifest.UniqueID}", packDirPath);
+                                IContentHelper packContentHelper = new ContentHelper(contentCore, packContentManager, packDirPath, packManifest.UniqueID, packManifest.Name, packMonitor);
                                 return new ContentPack(packDirPath, packManifest, packContentHelper, this.JsonHelper);
                             }
 
@@ -881,8 +885,8 @@ namespace StardewModdingAPI
                         helper.ObservableAssetLoaders.Add(loader);
                     // ReSharper restore SuspiciousTypeConversion.Global
 
-                    this.ContentManager.Editors[metadata] = helper.ObservableAssetEditors;
-                    this.ContentManager.Loaders[metadata] = helper.ObservableAssetLoaders;
+                    this.ContentCore.Editors[metadata] = helper.ObservableAssetEditors;
+                    this.ContentCore.Loaders[metadata] = helper.ObservableAssetLoaders;
                 }
 
                 // call entry method
@@ -927,7 +931,7 @@ namespace StardewModdingAPI
                         if (e.NewItems.Count > 0)
                         {
                             this.Monitor.Log("Invalidating cache entries for new asset editors...", LogLevel.Trace);
-                            this.ContentManager.InvalidateCacheFor(e.NewItems.Cast<IAssetEditor>().ToArray(), new IAssetLoader[0]);
+                            this.ContentCore.InvalidateCacheFor(e.NewItems.Cast<IAssetEditor>().ToArray(), new IAssetLoader[0]);
                         }
                     };
                     helper.ObservableAssetLoaders.CollectionChanged += (sender, e) =>
@@ -935,7 +939,7 @@ namespace StardewModdingAPI
                         if (e.NewItems.Count > 0)
                         {
                             this.Monitor.Log("Invalidating cache entries for new asset loaders...", LogLevel.Trace);
-                            this.ContentManager.InvalidateCacheFor(new IAssetEditor[0], e.NewItems.Cast<IAssetLoader>().ToArray());
+                            this.ContentCore.InvalidateCacheFor(new IAssetEditor[0], e.NewItems.Cast<IAssetLoader>().ToArray());
                         }
                     };
                 }
@@ -947,7 +951,7 @@ namespace StardewModdingAPI
             if (editors.Any() || loaders.Any())
             {
                 this.Monitor.Log("Invalidating cached assets for new editors & loaders...", LogLevel.Trace);
-                this.ContentManager.InvalidateCacheFor(editors, loaders);
+                this.ContentCore.InvalidateCacheFor(editors, loaders);
             }
 
             // unlock mod integrations

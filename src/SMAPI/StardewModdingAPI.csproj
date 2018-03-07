@@ -196,7 +196,7 @@
     <Compile Include="Framework\ModLoading\ModMetadata.cs" />
     <Compile Include="Framework\Reflection\ReflectedProperty.cs" />
     <Compile Include="Framework\RequestExitDelegate.cs" />
-    <Compile Include="Framework\SContentManager.cs" />
+    <Compile Include="Framework\ContentCore.cs" />
     <Compile Include="Framework\Exceptions\SParseException.cs" />
     <Compile Include="Framework\Serialisation\JsonHelper.cs" />
     <Compile Include="Framework\Serialisation\SmapiConverters\StringEnumConverter.cs" />

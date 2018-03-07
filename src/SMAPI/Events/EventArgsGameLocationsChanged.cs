@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using StardewValley;
 
@@ -11,7 +11,7 @@ namespace StardewModdingAPI.Events
         ** Accessors
         *********/
         /// <summary>The current list of game locations.</summary>
-        public List<GameLocation> NewLocations { get; }
+        public IList<GameLocation> NewLocations { get; }
 
 
         /*********
@@ -19,7 +19,7 @@ namespace StardewModdingAPI.Events
         *********/
         /// <summary>Construct an instance.</summary>
         /// <param name="newLocations">The current list of game locations.</param>
-        public EventArgsGameLocationsChanged(List<GameLocation> newLocations)
+        public EventArgsGameLocationsChanged(IList<GameLocation> newLocations)
         {
             this.NewLocations = newLocations;
         }

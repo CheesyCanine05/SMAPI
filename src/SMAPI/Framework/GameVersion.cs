@@ -24,8 +24,7 @@ namespace StardewModdingAPI.Framework
             ["1.07a"] = "1.0.8-prerelease1",
             ["1.08"] = "1.0.8",
             ["1.11"] = "1.1.1",
-            ["1.3.0.1"] = "1.13-alpha.1",
-            ["1.3.0.2"] = "1.13-alpha.2"
+            ["1.3.0.4"] = "1.13-alpha.4"
         };
 
 

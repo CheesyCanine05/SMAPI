@@ -31,6 +31,16 @@ namespace StardewModdingAPI.Framework
         ** Properties
         *********/
         /****
+        ** Constructor hack
+        ****/
+        /// <summary>A static instance of <see cref="Monitor"/> to use while <see cref="Game1"/> is initialising, which happens before the <see cref="SGame"/> constructor runs.</summary>
+        internal static IMonitor MonitorDuringInitialisation;
+
+        /// <summary>A static instance of <see cref="Reflection"/> to use while <see cref="Game1"/> is initialising, which happens before the <see cref="SGame"/> constructor runs.</summary>
+        internal static Reflector ReflectorDuringInitialisation;
+
+
+        /****
         ** SMAPI state
         ****/
         /// <summary>Encapsulates monitoring and logging.</summary>
@@ -154,7 +164,7 @@ namespace StardewModdingAPI.Framework
         ** Accessors
         *********/
         /// <summary>SMAPI's content manager.</summary>
-        public ContentCore ContentCore { get; }
+        public ContentCore ContentCore { get; private set; }
 
         /// <summary>Whether SMAPI should log more information about the game context.</summary>
         public bool VerboseLogging { get; set; }
@@ -180,15 +190,6 @@ namespace StardewModdingAPI.Framework
 
             // set XNA option required by Stardew Valley
             Game1.graphics.GraphicsProfile = GraphicsProfile.HiDef;
-
-            // override content manager
-            this.Monitor?.Log("Overriding content manager...", LogLevel.Trace);
-            this.ContentCore = new ContentCore(this.Content.ServiceProvider, this.Content.RootDirectory, Thread.CurrentThread.CurrentUICulture, null, this.Monitor, reflection);
-            this.Content = this.ContentCore.CreateContentManager("SGame.Content");
-            Game1.content = this.ContentCore.CreateContentManager("Game1.content");
-
-            // replace already-created temporary content managers
-            reflection.GetField<LocalizedContentManager>(typeof(Game1), "_temporaryContent").SetValue(this.ContentCore.CreateContentManager("Game1._temporaryContent")); // regenerate value with new content manager
         }
 
         /****
@@ -199,19 +200,15 @@ namespace StardewModdingAPI.Framework
         /// <param name="rootDirectory">The root directory to search for content.</param>
         protected override LocalizedContentManager CreateContentManager(IServiceProvider serviceProvider, string rootDirectory)
         {
-            // return default if SMAPI's content manager isn't initialised yet
+            // NOTE: this method is called from the Game1 constructor, before the SGame constructor runs.
+            // Don't depend on anything being initialised at this point.
+
             if (this.ContentCore == null)
             {
-                this.Monitor?.Log("SMAPI's content manager isn't initialised; skipping content manager interception.", LogLevel.Trace);
-                return base.CreateContentManager(serviceProvider, rootDirectory);
+                this.ContentCore = new ContentCore(serviceProvider, rootDirectory, Thread.CurrentThread.CurrentUICulture, null, SGame.MonitorDuringInitialisation, SGame.ReflectorDuringInitialisation);
+                SGame.ReflectorDuringInitialisation = null;
             }
-
-            // return single instance if valid
-            if (serviceProvider != this.Content.ServiceProvider)
-                throw new InvalidOperationException("SMAPI uses a single content manager internally. You can't get a new content manager with a different service provider.");
-            if (rootDirectory != this.Content.RootDirectory)
-                throw new InvalidOperationException($"SMAPI uses a single content manager internally. You can't get a new content manager with a different root directory (current is {this.Content.RootDirectory}, requested {rootDirectory}).");
-            return this.ContentCore.CreateContentManager("(generated instance)");
+            return this.ContentCore.CreateContentManager("(generated)", rootDirectory);
         }
 
         /// <summary>The method called when the game is updating its state. This happens roughly 60 times per second.</summary>

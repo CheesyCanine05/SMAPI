@@ -190,6 +190,8 @@ namespace StardewModdingAPI
                 AppDomain.CurrentDomain.UnhandledException += (sender, e) => this.Monitor.Log($"Critical app domain exception: {e.ExceptionObject}", LogLevel.Error);
 
                 // override game
+                SGame.MonitorDuringInitialisation = this.Monitor;
+                SGame.ReflectorDuringInitialisation = this.Reflection;
                 this.GameInstance = new SGame(this.Monitor, this.Reflection, this.EventManager, this.InitialiseAfterGameStart);
                 StardewValley.Program.gamePtr = this.GameInstance;
 

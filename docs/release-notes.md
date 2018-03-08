@@ -3,6 +3,9 @@
 * For players:
   * Updated for Stardew Valley 1.3 (multiplayer update); no longer compatible with earlier versions.
 
+* For modders:
+  * Fixed some assets not being editable.
+
 ## 2.5.3
 * For players:
   * Simplified and improved skipped-incompatible-mod messages.

@@ -7,6 +7,7 @@ using StardewValley;
 using StardewValley.BellsAndWhistles;
 using StardewValley.Buildings;
 using StardewValley.Locations;
+using StardewValley.Menus;
 using StardewValley.Objects;
 using StardewValley.Projectiles;
 using StardewValley.TerrainFeatures;
@@ -111,6 +112,22 @@ namespace StardewModdingAPI.Metadata
                     ["TerrainFeatures\\hoeDirt"] = (content, key) => HoeDirt.lightTexture = content.Load<Texture2D>(key),
                     ["TerrainFeatures\\hoeDirtDark"] = (content, key) => HoeDirt.darkTexture = content.Load<Texture2D>(key),
                     ["TerrainFeatures\\hoeDirtSnow"] = (content, key) => HoeDirt.snowTexture = content.Load<Texture2D>(key),
+
+                    // from TitleMenu
+                    ["Minigames\\Clouds"] = (content, key) =>
+                    {
+                        if (Game1.activeClickableMenu is TitleMenu)
+                            reflection.GetField<Texture2D>(Game1.activeClickableMenu, "cloudsTexture").SetValue(content.Load<Texture2D>(key));
+                    },
+                    ["Minigames\\TitleButtons"] = (content, key) =>
+                    {
+                        if (Game1.activeClickableMenu is TitleMenu titleMenu)
+                        {
+                            reflection.GetField<Texture2D>(titleMenu, "titleButtonsTexture").SetValue(content.Load<Texture2D>(key));
+                            foreach (TemporaryAnimatedSprite bird in reflection.GetField<List<TemporaryAnimatedSprite>>(titleMenu, "birds").GetValue())
+                                bird.texture = content.Load<Texture2D>(key);
+                        }
+                    },
 
                     // from Wallpaper
                     ["Maps\\walls_and_floors"] = (content, key) => Wallpaper.wallpaperTexture = content.Load<Texture2D>(key)

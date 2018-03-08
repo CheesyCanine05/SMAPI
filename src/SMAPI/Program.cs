@@ -288,11 +288,11 @@ namespace StardewModdingAPI
 
             // dispose core components
             this.IsGameRunning = false;
-            this.LogFile?.Dispose();
             this.ConsoleManager?.Dispose();
             this.ContentCore?.Dispose();
             this.CancellationTokenSource?.Dispose();
             this.GameInstance?.Dispose();
+            this.LogFile?.Dispose();
         }
 
 
